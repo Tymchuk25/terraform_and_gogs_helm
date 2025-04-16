@@ -2,12 +2,12 @@ namespace: gogs
 replicaCount: 2
 
 env:
-  DB_HOST: ""
+  DB_HOST: "mysql-service:3306"
   DB_NAME: "gogs"
   DB_USER: "gogs"
   DB_PASSWORD: "gogsgogs"
   GOGS_DOMAIN: "gogs-service"
-  GOGS_EXTERNAL_URL: ""
+  GOGS_EXTERNAL_URL: "http://192.168.56.119:3000/"
   HTTP_PORT: "3000"
 
 image:
