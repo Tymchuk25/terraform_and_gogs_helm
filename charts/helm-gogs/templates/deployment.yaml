@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gogs
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: gogs
+  template:
+    metadata:
+      labels:
+        app: gogs
+    spec:
+      containers:
+        - name: gogs
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: 3000
+            - containerPort: 22
+          env:
+  {{- range $key, $value := .Values.env }}
+          - name: {{ $key }}
+            valueFrom:
+              configMapKeyRef:
+                name: gogs-config
+                key: {{ $key }}
+  {{- end }}
+

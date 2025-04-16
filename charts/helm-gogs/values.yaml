@@ -1,0 +1,32 @@
+namespace: gogs
+replicaCount: 2
+
+env:
+  DB_HOST: ""
+  DB_NAME: "gogs"
+  DB_USER: "gogs"
+  DB_PASSWORD: "gogsgogs"
+  GOGS_DOMAIN: "gogs-service"
+  GOGS_EXTERNAL_URL: ""
+  HTTP_PORT: "3000"
+
+image:
+  repository: vitaliitymchuk/gogs
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  name: gogs-service
+  type: ClusterIP
+  port: 80
+  sshPort: 22
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/affinity: "cookie"
+    nginx.ingress.kubernetes.io/session-cookie-name: "route"
+    nginx.ingress.kubernetes.io/session-cookie-hash: "sha1"
+  port: 80
