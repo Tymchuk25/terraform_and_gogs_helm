@@ -12,7 +12,7 @@ env:
 
 image:
   repository: vitaliitymchuk/gogs
-  tag: latest
+  tag: github
   pullPolicy: IfNotPresent
 
 service:
