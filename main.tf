@@ -41,14 +41,13 @@ module "eks" {
 
   cluster_endpoint_public_access           = true
   cluster_endpoint_private_access          = true
-  #cluster_endpoint_public_access_cidrs     = ["xxx/32"]
 
   eks_managed_node_groups = {
     default = {
         min_size = 1
         max_size = 1
         desired_size = 1
-        instance_types = ["t3.small"]
+        instance_types = ["t3.medium"]
     }
   }
 
@@ -157,58 +156,6 @@ resource "helm_release" "nginx_ingress" {
   depends_on = [module.eks]
 }
 
-# resource "helm_release" "gogs" {
-#   name = "gogs"
-#   chart = "${path.module}/charts/helm-gogs"
-#   namespace = "gogs"
-#   create_namespace = true
-
-#   set { 
-#     name = "env.DB_HOST"
-#     value = module.rds.db_instance_endpoint
-#   }
-
-#   set {
-#     name = "env.GOGS_EXTERNAL_URL"
-#     value = "http://${data.kubernetes_service.nginx_ingress.status[0].load_balancer[0].ingress[0].hostname}"
-#   }
-
-#   depends_on = [
-#     helm_release.nginx_ingress,
-#     module.rds
-#   ]
-# }
-
-resource "local_file" "gogs_values" {
-  filename = "${path.module}/values.generated.yaml"
-  content = <<EOT
-env:
-  DB_HOST: "${module.rds.db_instance_endpoint}"
-  GOGS_EXTERNAL_URL: "http://${data.kubernetes_service.nginx_ingress.status[0].load_balancer[0].ingress[0].hostname}"
-  EOT
-  depends_on = [ 
-    helm_release.nginx_ingress,
-    module.rds
-   ]
-}
-
-resource "null_resource" "git_push" {
-  provisioner "local-exec" {
-    command = <<EOT
-cd ${path.module}
-git add values.generated.yaml
-git commit -m "update dynamic values" || echo "No change to commit" 
-git push
-    EOT
-  }
-  depends_on = [ local_file.gogs_values ]
-}
-
-resource "kubernetes_manifest" "argocd_app" {
-  manifest = yamldecode(file("${path.module}/Application.yaml"))
-  depends_on = [ null_resource.git_push, helm_release.argocd ]
-}
-
 resource "helm_release" "argocd" {
   name = "argocd"
   namespace = "argocd"
@@ -221,6 +168,37 @@ resource "helm_release" "argocd" {
    value = "LoadBalancer"
  }
 
- depends_on = [module.eks]
+ depends_on = [module.eks, helm_release.nginx_ingress]
 
 }
+
+resource "local_file" "gogs_values" {
+  filename = "${path.module}/charts/helm-gogs/values.generated.yaml"    //DB_HOST: "${module.rds.db_instance_endpoint}" GOGS_EXTERNAL_URL: "http://${data.kubernetes_service.nginx_ingress.status[0].load_balancer[0].ingress[0].hostname}"
+  content = <<EOT
+env:
+  DB_HOST: "${module.rds.db_instance_endpoint}"                     
+  GOGS_EXTERNAL_URL: "http://${data.kubernetes_service.nginx_ingress.status[0].load_balancer[0].ingress[0].hostname}"
+  EOT
+  depends_on = [ 
+    helm_release.nginx_ingress,
+    module.rds,
+    helm_release.argocd
+   ]
+}
+
+resource "null_resource" "git_push" {
+  provisioner "local-exec" {
+    command = "git_push.cmd"
+  }
+  depends_on = [ local_file.gogs_values ]
+}
+
+
+# resource "kubernetes_manifest" "argocd_app" {
+#   manifest = yamldecode(file("${path.module}/Application.yaml"))
+#     depends_on = [
+#     null_resource.git_push,
+#     helm_release.argocd,
+#     module.eks
+#   ]
+# }
