@@ -1,6 +1,6 @@
 namespace: gogs
 replicaCount: 2
-
+amg: 3
 env:
   DB_HOST: ""
   DB_NAME: "gogs"
