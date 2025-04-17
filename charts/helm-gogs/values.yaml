@@ -1,6 +1,6 @@
 namespace: gogs
 replicaCount: 2
-amg: "4d1d0cf5a0ca750ce27a6aacf8f80eb35b6998f7"
+imagetag: "1"
 env:
   DB_HOST: ""
   DB_NAME: "gogs"
@@ -12,7 +12,6 @@ env:
 
 image:
   repository: vitaliitymchuk/gogs
-  tag: github
   pullPolicy: IfNotPresent
 
 service:
