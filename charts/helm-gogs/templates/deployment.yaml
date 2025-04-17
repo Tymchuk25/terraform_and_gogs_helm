@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: gogs
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.imagetag }}"
           ports:
             - containerPort: 3000
             - containerPort: 22
