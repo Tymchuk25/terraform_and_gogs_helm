@@ -5,7 +5,7 @@ env:
   DB_HOST: ""
   DB_NAME: "gogs"
   DB_USER: "gogs"
-  DB_PASSWORD: "ggs"
+  DB_PASSWORD: "gogs"
   GOGS_DOMAIN: "gogs-service"
   GOGS_EXTERNAL_URL: ""
   HTTP_PORT: "3000"
