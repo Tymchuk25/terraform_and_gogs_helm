@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gogs
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/Tymchuk25/terraform_and_gogs_helm.git
+    targetRevision: HEAD
+    path: charts/helm-gogs
+    helm:
+      valueFiles:
+        - values.yaml
+        - values.generated.yaml
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: gogs
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

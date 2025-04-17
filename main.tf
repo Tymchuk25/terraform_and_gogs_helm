@@ -124,6 +124,8 @@ module "rds" {
   backup_retention_period = var.backup_retention_period
   deletion_protection = false
   skip_final_snapshot = true
+  create_random_password = false
+
 
   create_db_subnet_group = false
   db_subnet_group_name = aws_db_subnet_group.rds_subnet_group.name
@@ -155,24 +157,70 @@ resource "helm_release" "nginx_ingress" {
   depends_on = [module.eks]
 }
 
-resource "helm_release" "gogs" {
-  name = "gogs"
-  chart = "${path.module}/charts/helm-gogs"
-  namespace = "gogs"
-  create_namespace = true
+# resource "helm_release" "gogs" {
+#   name = "gogs"
+#   chart = "${path.module}/charts/helm-gogs"
+#   namespace = "gogs"
+#   create_namespace = true
 
-  set { 
-    name = "env.DB_HOST"
-    value = module.rds.db_instance_endpoint
-  }
+#   set { 
+#     name = "env.DB_HOST"
+#     value = module.rds.db_instance_endpoint
+#   }
 
-  set {
-    name = "env.GOGS_EXTERNAL_URL"
-    value = "http://${data.kubernetes_service.nginx_ingress.status[0].load_balancer[0].ingress[0].hostname}"
-  }
+#   set {
+#     name = "env.GOGS_EXTERNAL_URL"
+#     value = "http://${data.kubernetes_service.nginx_ingress.status[0].load_balancer[0].ingress[0].hostname}"
+#   }
 
-  depends_on = [
+#   depends_on = [
+#     helm_release.nginx_ingress,
+#     module.rds
+#   ]
+# }
+
+resource "local_file" "gogs_values" {
+  filename = "${path.module}/values.generated.yaml"
+  content = <<EOT
+env:
+  DB_HOST: "${module.rds.db_instance_endpoint}"
+  GOGS_EXTERNAL_URL: "http://${data.kubernetes_service.nginx_ingress.status[0].load_balancer[0].ingress[0].hostname}"
+  EOT
+  depends_on = [ 
     helm_release.nginx_ingress,
     module.rds
-  ]
+   ]
+}
+
+resource "null_resource" "git_push" {
+  provisioner "local-exec" {
+    command = <<EOT
+cd ${path.module}
+git add values.generated.yaml
+git commit -m "update dynamic values" || echo "No change to commit" 
+git push
+    EOT
+  }
+  depends_on = [ local_file.gogs_values ]
+}
+
+resource "kubernetes_manifest" "argocd_app" {
+  manifest = yamldecode(file("${path.module}/Application.yaml"))
+  depends_on = [ null_resource.git_push, helm_release.argocd ]
+}
+
+resource "helm_release" "argocd" {
+  name = "argocd"
+  namespace = "argocd"
+  repository = "https://argoproj.github.io/argo-helm"
+  chart = "argo-cd"
+  create_namespace = true
+
+ set {
+   name  = "server.service.type"
+   value = "LoadBalancer"
+ }
+
+ depends_on = [module.eks]
+
 }
