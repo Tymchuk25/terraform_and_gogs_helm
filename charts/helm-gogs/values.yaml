@@ -1,6 +1,6 @@
 namespace: gogs
 replicaCount: 2
-imagetag: "1"
+imagetag: "github"
 env:
   DB_HOST: ""
   DB_NAME: "gogs"
