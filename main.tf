@@ -194,11 +194,13 @@ resource "null_resource" "git_push" {
 }
 
 
-# resource "kubernetes_manifest" "argocd_app" {
-#   manifest = yamldecode(file("${path.module}/Application.yaml"))
-#     depends_on = [
-#     null_resource.git_push,
-#     helm_release.argocd,
-#     module.eks
-#   ]
-# }
+resource "kubernetes_manifest" "argocd_app" {
+  manifest = yamldecode(file("${path.module}/Application.yaml"))
+  count = var.enable_argocd_app ? 1 : 0
+    depends_on = [
+    module.eks,
+    null_resource.git_push,
+    helm_release.argocd,
+  ] 
+
+}

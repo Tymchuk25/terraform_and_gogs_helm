@@ -120,3 +120,8 @@ variable "family" { //terraform.tfvars
   type        = string
  // default = "mysql8.0"
 }
+
+variable "enable_argocd_app" {
+  type    = bool
+  default = false
+}
